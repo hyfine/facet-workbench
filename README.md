@@ -6,9 +6,9 @@
 
 Facet is a small, English-language toolbox that runs in one browser tab. Open it from a folder, a USB drive or a static website. No installation, account, server process, CDN, or runtime dependencies.
 
-[Watch the walkthrough](docs/facet-walkthrough.webm) · [How comparison works](#what-counts-as-a-match) · [Architecture](#inside-the-workbench) · [MIT license](LICENSE)
+[Open the workbench](https://hyfine.github.io/facet-workbench/) · [Watch the walkthrough](https://hyfine.github.io/facet-workbench/docs/demo.html) · [Download offline](https://hyfine.github.io/facet-workbench/facet-offline.zip) · [Architecture](#inside-the-workbench) · [MIT license](LICENSE)
 
-[![A real Facet comparison: a green ribbon connects the same engine block at different positions in two JSON documents. Select to watch the walkthrough.](docs/facet-preview.png)](docs/facet-walkthrough.webm)
+[![A real Facet comparison: a green ribbon connects the same engine block at different positions in two JSON documents. Select to watch the walkthrough.](docs/facet-preview.png)](https://hyfine.github.io/facet-workbench/docs/demo.html)
 
 ## Open it
 
