@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="294" viewBox="0 0 1000 294" role="img" aria-labelledby="t d">
+  <title id="t">Facet: the entire pipeline stays inside one browser tab</title>
+  <desc id="d">File or paste flows into a local document reader, through the compare, format or decode engine and into a view. Copy and save are explicit user actions. No server or storage is involved.</desc>
+  <style>
+    text{font-family:system-ui,sans-serif;fill:#1b3c30}.label{font:600 11px monospace;letter-spacing:1.6px;fill:#47654e}.name{font-size:20px;font-weight:650}.note{font-size:12px;fill:#526857}.wire{fill:none;stroke:#aab8a2;stroke-width:2}.pulse{fill:none;stroke:#54954a;stroke-width:3;stroke-linecap:round;stroke-dasharray:6 26;animation:travel 2.8s linear infinite}@keyframes travel{to{stroke-dashoffset:-96}}@media(prefers-reduced-motion:reduce){.pulse{animation:none}}
+  </style>
+  <rect x="1" y="1" width="998" height="292" rx="14" fill="#f6f7ef" stroke="#c8d2bf"/>
+  <text x="30" y="35" class="label">FACET  /  SYSTEM PLATE 01</text>
+  <text x="970" y="35" class="label" text-anchor="end">ONE BROWSER TAB</text>
+  <path d="M30 50H970" stroke="#c8d2bf"/>
+  <g class="wire"><path id="flow" d="M178 151H241 M414 151H442 Q458 151 458 135V108 Q458 94 476 94H508 M414 151H508 M414 151H442 Q458 151 458 167V194 Q458 208 476 208H508 M690 94H714 Q732 94 732 111V136 Q732 151 750 151H794 M690 151H794 M690 208H714 Q732 208 732 191V167 Q732 151 750 151H794"/></g>
+  <use href="#flow" class="pulse"/>
+  <g fill="#fffefa" stroke="#b6c5af"><rect x="30" y="111" width="148" height="80" rx="8"/><rect x="241" y="111" width="173" height="80" rx="8"/><rect x="794" y="111" width="176" height="80" rx="8"/></g>
+  <g fill="#e1edd6" stroke="#afc7a2"><rect x="508" y="73" width="182" height="42" rx="7"/><rect x="508" y="130" width="182" height="42" rx="7"/><rect x="508" y="187" width="182" height="42" rx="7"/></g>
+  <text x="45" y="136" class="label">INPUT</text><text x="45" y="165" class="name">File / paste</text>
+  <text x="257" y="136" class="label">IN MEMORY</text><text x="257" y="165" class="name">Read source</text>
+  <text x="525" y="100">Compare structures</text><text x="525" y="157">Repair + format</text><text x="525" y="214">Decode bytes</text>
+  <text x="810" y="136" class="label">OUTPUT</text><text x="810" y="165" class="name">View / export</text>
+  <path d="M30 248H970" stroke="#c8d2bf"/><circle cx="35" cy="271" r="4" fill="#579253"/>
+  <text x="49" y="275" class="note">No upload endpoint. No analytics. The document leaves the workbench only if you copy or save it.</text>
+</svg>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="A pocket workbench for comparing files, repairing JSON and decoding Base64. No install or uploads.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Facet — Local utility workbench</title>
+  <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css">
+  <script defer src="assets/json.js"></script>
+  <script defer src="assets/diff.js"></script>
+  <script defer src="assets/base64.js"></script>
+  <script defer src="assets/app.js"></script>
+</head>
+<body>
+  <header class="mast"><div class="mast-inner">
+    <a class="brand" href="#compare" aria-label="Facet home"><img src="assets/mark.svg" alt="" width="34" height="34"><b>Facet</b></a>
+    <span class="mast-line"></span><span class="wordmark-note">UTILITY WORKBENCH</span>
+    <span class="privacy"><i></i> Runs on your device</span>
+  </div></header>
+  <main class="shell">
+    <nav class="toolnav" aria-label="Toolbox">
+      <a href="#compare" data-tool="compare"><span class="glyph">⇄</span> Compare <kbd>1</kbd></a>
+      <a href="#json" data-tool="json"><span class="glyph">{ }</span> JSON Studio <kbd>2</kbd></a>
+      <a href="#base64" data-tool="base64"><span class="glyph">Aa</span> Base64 <kbd>3</kbd></a>
+    </nav>
+    <div class="hero">
+      <div><div class="eyebrow"><span class="rule"></span><span id="kicker"></span></div>
+        <h1 id="heading"></h1><p id="subtitle"></p></div>
+      <div class="figure" aria-hidden="true"><div class="plot">
+        <svg viewBox="0 0 174 58" fill="none"><g stroke="currentColor">
+          <path d="M12 14H47C73 14 92 44 120 44H161M12 44H47C73 44 92 14 120 14H161"/>
+          <path d="M12 20H47C73 20 92 50 120 50H161M12 38H47C73 38 92 8 120 8H161" opacity=".34"/>
+          <circle cx="12" cy="14" r="3"/><circle cx="161" cy="44" r="3"/><circle cx="12" cy="44" r="3"/><circle cx="161" cy="14" r="3"/>
+        </g></svg></div><span id="figcaption">FIG 01 / CORRESPONDENCE</span></div>
+    </div>
+    <section id="compare" class="surface" aria-label="Compare workspace" hidden>
+      <div class="commandbar"><div class="controlgroup">
+        <label class="inline">Mode <select id="mode"><option value="auto">Auto-detect</option><option value="json">JSON</option><option value="text">Text</option></select></label>
+        <label class="check" title="Objects always ignore key order. Enable to compare arrays by index."><input type="checkbox" id="order"> Ordered arrays</label>
+      </div><div class="controlgroup"><button id="diff-example">Load example</button><button id="edit" class="primary" aria-expanded="false">Edit inputs</button></div></div>
+      <div class="statusline" id="diff-status" role="status"></div>
+      <div class="split" id="split">
+        <article class="pane" data-side="0">
+          <header><span class="tag">A</span><div><small>ORIGINAL</small><strong id="name0">Original</strong></div><button class="file-btn" data-file="0" aria-label="Open original file">Open file</button></header>
+          <textarea id="input0" aria-label="Original text" spellcheck="false" placeholder="Paste original text or JSON…" hidden></textarea>
+          <div class="rows" id="rows0" aria-label="Original comparison"></div>
+        </article>
+        <article class="pane" data-side="1">
+          <header><span class="tag">B</span><div><small>REVISION</small><strong id="name1">Revision</strong></div><button class="file-btn" data-file="1" aria-label="Open revision file">Open file</button></header>
+          <textarea id="input1" aria-label="Revision text" spellcheck="false" placeholder="Paste revised text or JSON…" hidden></textarea>
+          <div class="rows" id="rows1" aria-label="Revision comparison"></div>
+        </article>
+        <svg id="connections" aria-hidden="true"><path id="bridge"></path></svg>
+      </div>
+      <div class="panel-foot"><span id="hint">Hover or focus a matching row to trace its counterpart.</span><span class="key-hint">LOCAL ENGINE</span></div>
+    </section>
+    <section id="json" class="surface" aria-label="JSON Studio" hidden>
+      <div class="commandbar"><div class="controlgroup">
+        <label class="check"><input id="repair" type="checkbox" checked> Auto-repair</label>
+        <label class="inline">Indent <select id="indent"><option value="2">2 spaces</option><option value="4">4 spaces</option><option value="0">Compact</option></select></label>
+      </div><div class="controlgroup"><button id="json-example">Load example</button><button id="json-file">Open file</button></div></div>
+      <div class="statusline" id="json-status" role="status"></div>
+      <div class="duo">
+        <article class="pane"><header><span class="tag">{ }</span><div><small>INPUT</small><strong>Source document</strong></div></header>
+          <textarea id="json-input" aria-label="JSON source" spellcheck="false" placeholder="Paste JSON or a slightly imperfect document…"></textarea></article>
+        <article class="pane"><header><div class="segments" aria-label="Output view"><button data-view="tree">Tree</button><button data-view="text">Text</button></div>
+          <button id="pop" class="file-btn" aria-label="Open expanded JSON output">Expand view ↗</button></header>
+          <div id="json-output" class="output"></div></article>
+      </div>
+      <div class="panel-foot"><span class="controlgroup"><button id="fold">Collapse all</button><button id="unfold">Expand all</button></span><span class="controlgroup"><button id="copy-json">Copy JSON</button><button id="save-json">Save JSON</button></span></div>
+    </section>
+    <section id="base64" class="surface" aria-label="Base64 decoder" hidden>
+      <div class="commandbar"><span class="eyebrow">BASE64 / BASE64URL → TEXT</span><span class="controlgroup"><button id="b64-example">Load example</button><button id="b64-file">Open file</button></span></div>
+      <div class="statusline" id="b64-status" role="status"></div>
+      <div class="duo">
+        <article class="pane"><header><span class="tag">64</span><div><small>INPUT</small><strong>Encoded data</strong></div></header><textarea id="b64-input" aria-label="Base64 input" spellcheck="false" placeholder="Paste Base64, Base64URL or a Base64 data URL…"></textarea></article>
+        <article class="pane"><header><span class="tag">Aa</span><div><small>OUTPUT</small><strong>Readable text</strong></div></header><pre id="b64-output" class="output"></pre></article>
+      </div>
+      <div class="panel-foot"><span>UTF-8 and BOM-marked UTF-16 supported.</span><span class="controlgroup"><button id="copy-b64">Copy text</button><button id="to-json">Open in JSON Studio →</button></span></div>
+    </section>
+    <noscript>Enable JavaScript to run the local workbench.</noscript>
+    <footer><span><b>FACET</b> / WORKBENCH 01</span><span>No uploads. No saved inputs.</span><span>SWITCH TOOLS &nbsp; <kbd>Alt</kbd> + <kbd>1–3</kbd></span></footer>
+  </main>
+  <input type="file" id="picker" hidden>
+  <dialog id="viewer" aria-labelledby="viewer-title"><header><h2 id="viewer-title">JSON output</h2><button id="close">Close</button></header><div id="viewer-body"></div></dialog>
+  <div id="toast" role="status"></div>
+</body>
+</html>
