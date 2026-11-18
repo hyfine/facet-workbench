@@ -2,16 +2,17 @@
 (() => {
   "use strict";
   const MAX_INPUT = 1024 * 1024;
+  const MAX_VALUES = 8000, MAX_DEPTH = 96;
   const number = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
   const bareKey = /[A-Za-z_$][\w$-]*/y;
-  function parse(source, repair = false) {
-    if (source.length > MAX_INPUT) throw Error("Input exceeds the 1 Mi-character limit.");
+  function parse(source, repair = false, maxValues = MAX_VALUES, startDepth = 0) {
+    if (source.length > MAX_INPUT) throw new RangeError("Input exceeds the 1 Mi-character limit.");
     let i = 0, count = 0;
     const fixes = new Map();
     const fixed = label => fixes.set(label, (fixes.get(label) || 0) + 1);
-    function fail(message) {
+    function fail(message, ErrorType = SyntaxError) {
       const before = source.slice(0, i).split(/\r\n|\r|\n/);
-      throw Error(`${message} (line ${before.length}, column ${before.at(-1).length + 1}).`);
+      throw new ErrorType(`${message} (line ${before.length}, column ${before.at(-1).length + 1}).`);
     }
     function space() {
       while (i < source.length) {
@@ -47,7 +48,7 @@
     }
     function value(depth) {
       space();
-      if (++count > 8000 || depth > 96) fail("Document exceeds 8,000 values or 96 nesting levels");
+      if (++count > maxValues || depth > MAX_DEPTH) fail("Document exceeds 8,000 values or 96 nesting levels", RangeError);
       const c = source[i];
       if (c === "{" || c === "[") {
         const object = c === "{", end = object ? "}" : "]";
@@ -95,7 +96,7 @@
       return { type: "number", value: n[0] };
     }
     if (repair && source.charCodeAt(0) === 0xfeff) { i++; fixed("removed BOM"); }
-    const root = value(0);
+    const root = value(startDepth);
     space();
     if (i !== source.length) fail("Unexpected content after value");
     return { root, fixes, count };
@@ -112,6 +113,36 @@
       (obj ? JSON.stringify(key) + (indent ? ": " : ":") : "") + format(child, indent, depth + 1)
     ).join("," + line(depth + 1)) + line(depth) + b;
   }
-  const api = { parse, literal, format, MAX_INPUT };
+  function unpackStrings(doc) {
+    let count = doc.count, unpacked = 0, limited = 0, budget = MAX_INPUT * 8;
+    function visit(node, depth) {
+      if (node.children) return { ...node, children: node.children.map(({ key, node: child }) =>
+        ({ key, node: visit(child, depth + 1) })) };
+      if (node.type !== "string") return node;
+      let text = node.value;
+      for (let layer = 0; /^[ \t\r\n]*[[{"]/.test(text); layer++) {
+        if (layer >= 8 || text.length > budget) { limited++; break; }
+        budget -= text.length;
+        let inner;
+        try { inner = parse(text, false, MAX_VALUES - count + 1, depth); }
+        catch (e) {
+          if (e instanceof RangeError) limited++;
+          else if (!(e instanceof SyntaxError)) throw e;
+          break;
+        }
+        if (inner.root.children) {
+          count += inner.count - 1; unpacked++;
+          return visit(inner.root, depth);
+        }
+        if (inner.root.type !== "string") break;
+        text = inner.root.value;
+      }
+      // Only replace the original string if a complete object or array was found.
+      return node;
+    }
+    const root = visit(doc.root, 0);
+    return { ...doc, root, count, unpacked, limited };
+  }
+  const api = { parse, unpackStrings, literal, format, MAX_INPUT };
   globalThis.FacetJSON = api;
 })();

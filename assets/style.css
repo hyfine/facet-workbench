@@ -11,3 +11,15 @@
 footer{display:flex;justify-content:space-between;color:#5e7061;font-size:.62rem;gap:10px;align-items:center;padding:18px 0 24px}footer b{color:#294637}
 @media(max-width:720px){.hero{padding:17px 0}.figure,.wordmark-note,.mast-line,footer span:last-child,.key-hint{display:none}.mast-inner{height:50px}.shell{width:96%;padding-top:12px}.toolnav{padding-bottom:11px}.toolnav a{padding:6px 9px}.commandbar{align-items:flex-start;flex-wrap:wrap}.split{gap:13px}.row{grid-template-columns:12px minmax(0,1fr);padding-left:0;padding-right:3px;font-size:12px}.lineno{display:none}.pane header{padding:7px;gap:5px;flex-wrap:wrap}.pane header .tag{display:none}.row-body{padding-left:min(calc(var(--depth,0)*6px),15%)}.panel-foot,.commandbar,.statusline{padding:9px}.duo{grid-template-columns:1fr}.duo .pane textarea,.duo .output{height:225px}.toolnav kbd{display:none}.privacy{font-size:.59rem}.panel-foot{flex-wrap:wrap}}
 @media(prefers-reduced-motion:no-preference){.toolnav a,button{transition:background .12s,border-color .12s}}
+.displaybar,.display-tools{display:flex;align-items:center;gap:4px}.displaybar{justify-content:space-between;padding:6px 2px}.display-tools button{padding:4px 9px}.display-tools [data-zoom="0"]{font-variant-numeric:tabular-nums;min-width:4em}.display-tools [data-full]{margin-left:4px}
+.row,.output,#viewer-body{font-size:calc(13px * var(--content-scale,1))}.pane textarea{font-size:calc(14px * var(--content-scale,1))}.lineno{font-size:calc(10px * var(--content-scale,1))}
+.view-host:is(:fullscreen,.tab-full){display:flex;flex-direction:column;background:var(--paper);width:100%;height:100%;padding:8px;overflow:auto;box-sizing:border-box}
+.view-host.tab-full{position:fixed;inset:0;z-index:4}body:has(.tab-full){overflow:hidden}
+body:has(#workspace.tab-full) :is(.mast,.toolnav,.hero,footer){display:none}
+#workspace:is(:fullscreen,.tab-full) .surface:not([hidden]){display:flex;flex:1;flex-direction:column;min-height:320px}
+#workspace:is(:fullscreen,.tab-full) :is(.split,.duo){flex:1;min-height:0}
+#workspace:is(:fullscreen,.tab-full) .pane{display:flex;flex-direction:column;min-height:0}
+#workspace:is(:fullscreen,.tab-full) .pane :is(.rows,.output,textarea),#viewer-panel:is(:fullscreen,.tab-full) #viewer-body{flex:1;min-height:0;height:0;resize:none}
+#viewer:has(.tab-full){position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;border:0;border-radius:0}
+#viewer header{flex-wrap:wrap;gap:6px}#viewer header .display-tools{margin-left:auto}
+@media(max-width:720px){.row{font-size:calc(12px * var(--content-scale,1))}#workspace:is(:fullscreen,.tab-full) .duo{grid-template-rows:repeat(2,minmax(0,1fr))}}

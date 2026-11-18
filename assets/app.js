@@ -130,11 +130,11 @@
     return r;
   }
   const connect = (a, b) => { peers.set(a, b); peers.set(b, a); };
-  function nodeBody(n, key) {
+  function nodeBody(n, key, readable = false) {
     const span = el("span", "row-body");
     if (key !== undefined) span.append(el("span", "field", key + "  "));
     span.append(n.children ? el("span", "node-count", n.type === "object" ? `{${n.children.length}}` : `[${n.children.length}]`)
-      : el("span", n.type, FacetJSON.literal(n)));
+      : el("span", n.type, readable && n.type === "string" ? n.value || '""' : FacetJSON.literal(n)));
     return span;
   }
   function renderJSON(roots, result) {
@@ -224,7 +224,7 @@
   const imperfect = "{\n  project: 'Atlas',\n  // Preview configuration\n  channels: ['web', 'cli',],\n  telemetry: false,\n}";
   let doc = null, formatted = "", view = "tree";
   function tree(n, key, depth) {
-    if (!n.children) { const leaf = el("div", "leaf"); leaf.append(nodeBody(n, key)); return leaf; }
+    if (!n.children) { const leaf = el("div", "leaf"); leaf.append(nodeBody(n, key, $("unpack").checked)); return leaf; }
     const details = el("details"); details.open = depth < 2;
     const summary = el("summary"); summary.append(nodeBody(n, key)); details.append(summary);
     for (const c of n.children) details.append(tree(c.node, n.type === "array" ? `[${c.key}]` : JSON.stringify(c.key), depth + 1));
@@ -241,10 +241,15 @@
     const s = $("json-input").value;
     if (!s.trim()) status("json-status", "Ready", "Paste a document to begin.");
     else try {
-      doc = FacetJSON.parse(s, $("repair").checked);
-      formatted = FacetJSON.format(doc.root, Number($("indent").value));
-      const fixes = [...doc.fixes].map(([label, count]) => `${label} ×${count}`);
-      status("json-status", fixes.length ? "Repaired" : "Valid JSON", fixes.join(" · ") || `${doc.count} values · Source unchanged`);
+      const source = FacetJSON.parse(s, $("repair").checked);
+      const output = $("unpack").checked ? FacetJSON.unpackStrings(source) : source;
+      formatted = FacetJSON.format(output.root, Number($("indent").value));
+      doc = output;
+      const notes = [...doc.fixes].map(([label, count]) => `${label} ×${count}`);
+      if (doc.unpacked) notes.push(`Unpacked JSON strings: ${doc.unpacked}`);
+      if (doc.limited) notes.push(`Kept as text (expansion limit): ${doc.limited}`);
+      if (!notes.length) notes.push(`${doc.count} values`);
+      status("json-status", doc.fixes.size ? "Repaired" : "Valid JSON", [...notes, "Source unchanged"].join(" · "));
     } catch (e) { status("json-status", "Invalid JSON", e.message, true); }
     showJSON($("json-output"));
     for (const id of ["copy-json", "save-json", "pop"]) $(id).disabled = !doc;
@@ -256,7 +261,7 @@
     for (const id of ["copy-json", "save-json", "pop"]) $(id).disabled = true;
     queueJSON();
   };
-  $("repair").onchange = $("indent").onchange = updateJSON;
+  $("repair").onchange = $("unpack").onchange = $("indent").onchange = updateJSON;
   $("json-example").onclick = () => { $("json-input").value = imperfect; updateJSON(); };
   $("json-file").onclick = () => chooseFile($("json-input"), updateJSON, msg => status("json-status", "File not opened", msg, true));
   document.querySelectorAll("[data-view]").forEach(b => { b.onclick = () => { view = b.dataset.view; updateJSON(); }; });
@@ -264,6 +269,60 @@
     $(id).onclick = () => $("json-output").querySelectorAll("details").forEach(d => { d.open = open; });
   $("pop").onclick = () => { showJSON($("viewer-body")); $("viewer").showModal(); };
   $("close").onclick = () => $("viewer").close();
+  let zoom = 100;
+  const displays = document.querySelectorAll(".display-tools");
+  function refreshDisplay() {
+    document.documentElement.style.setProperty("--content-scale", zoom / 100);
+    for (const bar of displays) {
+      const host = bar.closest(".view-host");
+      const full = host === document.fullscreenElement || host.classList.contains("tab-full");
+      const toggle = bar.querySelector("[data-full]");
+      toggle.textContent = full ? "Exit fullscreen" : "Fullscreen";
+      toggle.setAttribute("aria-pressed", full);
+      bar.querySelector('[data-zoom="-25"]').disabled = zoom === 75;
+      bar.querySelector('[data-zoom="25"]').disabled = zoom === 200;
+      bar.querySelector('[data-zoom="0"]').textContent = zoom + "%";
+    }
+    draw();
+  }
+  for (const bar of displays) {
+    bar.append($("display-controls").content.cloneNode(true));
+    bar.onclick = async e => {
+      const button = e.target.closest("button");
+      if (!button) return;
+      const host = bar.closest(".view-host");
+      if (button.hasAttribute("data-zoom")) {
+        const step = Number(button.dataset.zoom);
+        zoom = step ? Math.min(200, Math.max(75, zoom + step)) : 100;
+      } else if (host === document.fullscreenElement) {
+        try { await document.exitFullscreen(); } catch (err) { notice(err.message); }
+      } else if (host.classList.contains("tab-full")) {
+        host.classList.remove("tab-full");
+      } else {
+        try {
+          if (document.fullscreenEnabled) await host.requestFullscreen();
+          else host.classList.add("tab-full");
+        } catch (err) {
+          host.classList.add("tab-full");
+          notice("Browser fullscreen unavailable. Using the full tab instead.");
+        }
+      }
+      refreshDisplay();
+    };
+  }
+  document.addEventListener("fullscreenchange", refreshDisplay);
+  document.addEventListener("keydown", e => {
+    const host = $("viewer").open ? $("viewer-panel") : $("workspace");
+    if (e.key === "Escape" && host.classList.contains("tab-full")) {
+      e.preventDefault(); host.classList.remove("tab-full"); refreshDisplay();
+    }
+  });
+  $("viewer").addEventListener("close", () => {
+    $("viewer-panel").classList.remove("tab-full");
+    if (document.fullscreenElement === $("viewer-panel")) document.exitFullscreen().catch(err => notice(err.message));
+    refreshDisplay();
+  });
+  refreshDisplay();
   $("copy-json").onclick = () => copy(formatted);
   $("save-json").onclick = () => {
     const url = URL.createObjectURL(new Blob([formatted + "\n"], { type: "application/json" }));

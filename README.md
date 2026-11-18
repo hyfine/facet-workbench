@@ -16,7 +16,7 @@ Facet is a small, English-language toolbox that runs in one browser tab. Open it
 - **Web:** serve `index.html` and `assets/` from any static host. To serve the walkthrough as well, include `docs/`. The same files work under a URL subdirectory. [GitHub Pages instructions ↓](#publishing)
 - **First try:** the opening comparison contains two synthetic configurations. Hover over **`engine`** on the left. Its keys appear in the opposite order on the right, but the green ribbon shows the entire block is equal.
 
-The application itself is **under 50 KiB uncompressed**; the optional video is not loaded by the app. No tracking, saved inputs, network API or build step. Reloading resets the workspace. Downloaded files and the system clipboard are outside that boundary.
+The portable runtime is plain HTML, CSS and JavaScript; the optional video is not loaded by the app. No tracking, saved inputs, network API or build step. Reloading resets the workspace. Downloaded files and the system clipboard are outside that boundary.
 
 ## The instruments
 
@@ -27,6 +27,14 @@ The application itself is **under 50 KiB uncompressed**; the optional video is n
 | **Base64** | Paste standard Base64, Base64URL or a Base64 data URL. | Readable UTF-8 or BOM-marked UTF-16, byte count, copy and a direct handoff to JSON Studio. Invalid padding and binary input produce an error, not garbled text. |
 
 Use **Alt+1 / Alt+2 / Alt+3** to switch tools. Tab into a comparison pane and press **↑ / ↓** to trace matches. Press **Esc** to close the expanded JSON view.
+
+Use **− / +** above any workspace to scale its content from **75% to 200%**. Click the percentage to reset. **Fullscreen** dedicates the screen to the workspace (or the current tab if browser fullscreen is unavailable). **Expand view ↗** in JSON Studio opens just the output with its own fullscreen control and the same zoom setting.
+
+### Reading JSON inside strings
+
+**Unpack JSON strings** is on by default in Studio. For example, `{"envelope":"{\"tags\":[\"blue\"]}"}` displays and exports as `{"envelope":{"tags":["blue"]}}`. It also works when the whole input is a quoted JSON document or an array contains more serialized objects. The source pane is never rewritten. Turn the option off to format, copy or save with the original string types.
+
+**Tree** shows decoded text with actual newlines, quotes and path separators. **Text**, **Copy JSON** and **Save JSON** retain the escapes required for valid JSON. Ordinary text, scalar-looking strings like `"123"`, and incomplete embedded documents are not converted. Embedded documents must be strict JSON. Expansion shares the Studio size/depth limits and caps repeated decoding; when a limit is reached, the string stays intact and Studio reports it.
 
 ## What counts as a match?
 

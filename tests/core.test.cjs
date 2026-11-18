@@ -20,6 +20,34 @@ test("ambiguous repairs, JS expressions and duplicate decoded keys are refused",
     assert.throws(() => parse(bad, true), /line \d+, column \d+/);
   assert.equal(format(parse('{"__proto__":9,"10":"a","2":"b"}').root, 0), '{"__proto__":9,"10":"a","2":"b"}');
 });
+test("studio unpacks complete embedded documents without changing the source or its tokens", () => {
+  const record = String.raw`{"path":"C:\\kit\\demo","note":"one\ntwo \"ok\"","n":9007199254740993}`;
+  const envelope = { packet: JSON.stringify([record]), text: "null", draft: '{"unfinished":', quoted: '"hello"' };
+  const raw = JSON.stringify(JSON.stringify(envelope)), doc = parse(raw);
+  const output = FacetJSON.unpackStrings(doc);
+  const formatted = format(output.root);
+  const value = JSON.parse(formatted);
+  assert.equal(output.unpacked, 3);
+  assert.equal(output.limited, 0);
+  assert.equal(value.packet[0].path, String.raw`C:\kit\demo`);
+  assert.equal(value.packet[0].note, 'one\ntwo "ok"');
+  assert.match(formatted, /9007199254740993/);
+  assert.deepEqual([value.text, value.draft, value.quoted], ["null", '{"unfinished":', '"hello"']);
+  assert.equal(format(doc.root, 0), raw);
+  const wrapped = JSON.stringify(JSON.stringify(record));
+  assert.equal(format(FacetJSON.unpackStrings(parse(wrapped)).root, 0), record);
+});
+test("expansion respects the depth and value limits across all embedded documents", () => {
+  const deep = "[".repeat(96) + JSON.stringify("[0]") + "]".repeat(96);
+  const out = FacetJSON.unpackStrings(parse(deep));
+  assert.equal(out.limited, 1);
+  assert.equal(format(out.root, 0), deep);
+  const many = JSON.stringify(Array(4000).fill(1));
+  const wide = FacetJSON.unpackStrings(parse(JSON.stringify([many, many])));
+  assert.equal(wide.unpacked, 1);
+  assert.equal(wide.limited, 1);
+  assert.equal(wide.root.children[1].node.value, many);
+});
 test("reordered nested objects and repeated array elements retain actual peer links", () => {
   const a = parse('{"a":[1,2,1],"b":{"k":true,"n":null}}').root;
   const b = parse('{"b":{"n":null,"k":true},"a":[1,1,2]}').root;
