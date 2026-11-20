@@ -82,7 +82,13 @@
       </div><span class="controlgroup"><button id="b64-example">Load example</button><button id="b64-file">Open file</button></span></div>
       <div class="statusline" id="b64-status" role="status"></div>
       <div class="duo">
-        <article class="pane"><header><div><small>INPUT</small><strong id="b64-source-label">Encoded data</strong></div><button id="b64-format" class="file-btn" hidden>Format input</button></header><textarea id="b64-input" aria-label="Base64 input" spellcheck="false"></textarea></article>
+        <article class="pane"><header id="b64-source-header"><div><small>INPUT</small><strong id="b64-source-label">Encoded data</strong></div>
+          <div id="b64-views" class="segments" role="group" aria-label="JSON input view" hidden><button id="b64-text-view" aria-controls="b64-input">Text</button><button id="b64-tree-view" aria-controls="b64-tree">Tree</button></div>
+          <button id="b64-format" class="file-btn" hidden>Format input</button>
+          <div id="b64-folding" class="controlgroup" hidden><button id="b64-fold">Collapse all</button><button id="b64-unfold">Expand all</button></div>
+        </header>
+          <textarea id="b64-input" aria-label="Base64 input" spellcheck="false"></textarea>
+          <div id="b64-tree" class="output" role="region" aria-label="JSON input tree preview" hidden></div></article>
         <article class="pane"><header><div><small>OUTPUT</small><strong id="b64-result-label">Readable text</strong></div></header><pre id="b64-output" class="output"></pre></article>
       </div>
       <div class="panel-foot"><span id="b64-hint"></span><span class="controlgroup"><button id="copy-b64">Copy text</button><button id="to-json">Open in JSON Studio →</button></span></div>

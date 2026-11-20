@@ -13,6 +13,7 @@ footer{display:flex;justify-content:space-between;color:#5e7061;font-size:.62rem
 @media(prefers-reduced-motion:no-preference){.toolnav a,button{transition:background .12s,border-color .12s}}
 .displaybar,.display-tools{display:flex;align-items:center;gap:4px}.displaybar{justify-content:space-between;padding:6px 2px}.display-tools button{padding:4px 9px}.display-tools [data-zoom="0"]{font-variant-numeric:tabular-nums;min-width:4em}.display-tools [data-full]{margin-left:4px}
 #b64-field{color:var(--ink);border:1px solid var(--line);border-radius:5px;background:var(--surface);padding:6px;font-size:.84rem}
+#b64-source-header{flex-wrap:wrap}#b64-views{margin-left:auto}
 .row,.output,#viewer-body{font-size:calc(13px * var(--content-scale,1))}.pane textarea{font-size:calc(14px * var(--content-scale,1))}.lineno{font-size:calc(10px * var(--content-scale,1))}
 .view-host:is(:fullscreen,.tab-full){display:flex;flex-direction:column;background:var(--paper);width:100%;height:100%;padding:8px;overflow:auto;box-sizing:border-box}
 .view-host.tab-full{position:fixed;inset:0;z-index:4}body:has(.tab-full){overflow:hidden}

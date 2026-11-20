@@ -111,7 +111,7 @@ async function exercise(page, url) {
   const mode = codec.getByRole("combobox");
   const encoded = codec.locator("#b64-output");
   await mode.selectOption("encode");
-  const text = "标题 🌿\r\n" + '"'.repeat(2);
+  const text = "标题 🌿\r\n\r\n" + String.raw`Keep \n and "quotes". ` + "abcd".repeat(90);
   const picker = page.waitForEvent("filechooser");
   await codec.getByRole("button", { name: "Open file" }).click();
   await (await picker).setFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from(text) });
@@ -120,14 +120,36 @@ async function exercise(page, url) {
   await mode.selectOption("json");
   await codec.getByText("Cannot encode", { exact: true }).waitFor();
   const envelope = JSON.stringify({ payload: { message: text }, keep: { id: 1 } });
-  const jsonInput = codec.getByLabel("JSON input");
+  const jsonInput = codec.getByRole("textbox", { name: "JSON input", exact: true });
   await jsonInput.fill(envelope);
   await codec.getByText("Verified", { exact: true }).waitFor();
   const normal = await encoded.textContent();
   assert.equal(Buffer.from(normal, "base64").toString(), envelope);
   await button("Format input").click();
-  assert.equal(await jsonInput.inputValue(), JSON.stringify(JSON.parse(envelope), null, 2));
+  const pretty = JSON.stringify(JSON.parse(envelope), null, 2);
+  assert.equal(await jsonInput.inputValue(), pretty);
   assert.equal(await encoded.textContent(), normal);
+  const preview = codec.getByRole("region", { name: "JSON input tree preview" });
+  await codec.getByRole("button", { name: "Tree", exact: true }).click();
+  await codec.getByRole("button", { name: "Collapse all" }).click();
+  assert.equal(await preview.locator("details[open]").count(), 0);
+  await codec.getByRole("button", { name: "Expand all" }).click();
+  const leaf = preview.locator(".string");
+  assert.equal(await leaf.textContent(), text);
+  const lines = await leaf.evaluate(span => {
+    const node = span.firstChild, range = document.createRange();
+    const top = offset => {
+      range.setStart(node, offset); range.setEnd(node, offset + 1);
+      return range.getBoundingClientRect().top;
+    };
+    const keep = top(node.data.indexOf("Keep"));
+    return { gap: keep - top(0), lineHeight: parseFloat(getComputedStyle(span).lineHeight), wrapped: top(node.length - 1) > keep };
+  });
+  assert.ok(lines.gap >= lines.lineHeight * 1.9, "The blank line must occupy a real display line.");
+  assert.ok(lines.wrapped, "Long text must wrap within the input pane.");
+  assert.equal(await encoded.textContent(), normal);
+  await codec.getByRole("button", { name: "Text", exact: true }).click();
+  assert.equal(await jsonInput.inputValue(), pretty);
   await codec.getByLabel("Stringify field").fill("payload");
   await codec.getByText(/Stored "payload" as a JSON string/).waitFor();
   await codec.getByText("Verified", { exact: true }).waitFor();
@@ -135,8 +157,20 @@ async function exercise(page, url) {
   const recovered = JSON.parse(Buffer.from(packed, "base64").toString("utf8"));
   assert.equal(JSON.parse(recovered.payload).message, text);
   assert.deepEqual(recovered.keep, { id: 1 });
+  // The tree may unpack a serialized field for reading, never for encoding.
+  const wireText = Buffer.from(packed, "base64").toString("utf8");
+  await jsonInput.fill(wireText);
+  await codec.getByRole("button", { name: "Tree", exact: true }).click();
+  assert.equal(await leaf.textContent(), text);
+  await page.waitForFunction(() => !document.getElementById("copy-b64").disabled);
+  assert.equal(await encoded.textContent(), packed);
+  await codec.getByRole("button", { name: "Text", exact: true }).click();
+  assert.equal(await jsonInput.inputValue(), wireText);
   await jsonInput.fill('{"broken":');
   await codec.getByText("Cannot encode", { exact: true }).waitFor();
+  await codec.getByRole("button", { name: "Tree", exact: true }).click();
+  assert.match(await preview.innerText(), /Switch to Text to edit/);
+  await codec.getByRole("button", { name: "Text", exact: true }).click();
   await button("Format input").click();
   assert.equal(await jsonInput.inputValue(), '{"broken":');
   assert.equal(await encoded.textContent(), "");

@@ -223,18 +223,24 @@
 
   const imperfect = "{\n  project: 'Atlas',\n  // Preview configuration\n  channels: ['web', 'cli',],\n  telemetry: false,\n}";
   let doc = null, formatted = "", view = "tree";
-  function tree(n, key, depth) {
-    if (!n.children) { const leaf = el("div", "leaf"); leaf.append(nodeBody(n, key, $("unpack").checked)); return leaf; }
+  function tree(n, key, depth, readable) {
+    if (!n.children) { const leaf = el("div", "leaf"); leaf.append(nodeBody(n, key, readable)); return leaf; }
     const details = el("details"); details.open = depth < 2;
     const summary = el("summary"); summary.append(nodeBody(n, key)); details.append(summary);
-    for (const c of n.children) details.append(tree(c.node, n.type === "array" ? `[${c.key}]` : JSON.stringify(c.key), depth + 1));
+    for (const c of n.children) details.append(tree(c.node, n.type === "array" ? `[${c.key}]` : JSON.stringify(c.key), depth + 1, readable));
     return details;
+  }
+  function renderTree(target, node, readable) {
+    const root = el("div", "tree"); root.append(tree(node, "$", 0, readable)); target.replaceChildren(root);
+  }
+  function openBranches(target, open) {
+    target.querySelectorAll("details").forEach(d => { d.open = open; });
   }
   function showJSON(target) {
     target.replaceChildren();
     if (!doc) { target.append(el("span", "empty", "Valid output will appear here.")); return; }
     if (view === "text") target.append(el("pre", "", formatted));
-    else { const root = el("div", "tree"); root.append(tree(doc.root, "$", 0)); target.append(root); }
+    else renderTree(target, doc.root, $("unpack").checked);
   }
   function updateJSON() {
     doc = null; formatted = "";
@@ -266,7 +272,7 @@
   $("json-file").onclick = () => chooseFile($("json-input"), updateJSON, msg => status("json-status", "File not opened", msg, true));
   document.querySelectorAll("[data-view]").forEach(b => { b.onclick = () => { view = b.dataset.view; updateJSON(); }; });
   for (const [id, open] of [["fold", false], ["unfold", true]])
-    $(id).onclick = () => $("json-output").querySelectorAll("details").forEach(d => { d.open = open; });
+    $(id).onclick = () => openBranches($("json-output"), open);
   $("pop").onclick = () => { showJSON($("viewer-body")); $("viewer").showModal(); };
   $("close").onclick = () => $("viewer").close();
   let zoom = 100;
@@ -331,6 +337,34 @@
   const codecMode = () => $("b64-mode").value;
   const codecDrafts = { decode: "", source: "" };
   const draftKey = () => codecMode() === "decode" ? "decode" : "source";
+  let codecView = "text";
+  function showCodecInput() {
+    const json = codecMode() === "json", preview = json && codecView === "tree", target = $("b64-tree");
+    $("b64-views").hidden = !json;
+    $("b64-text-view").setAttribute("aria-pressed", !preview);
+    $("b64-tree-view").setAttribute("aria-pressed", preview);
+    $("b64-format").hidden = !json || preview;
+    $("b64-folding").hidden = !preview;
+    $("b64-input").hidden = preview;
+    target.hidden = !preview;
+    target.replaceChildren();
+    if (!preview) return;
+    $("b64-fold").disabled = $("b64-unfold").disabled = true;
+    if (!codecDrafts.source.trim()) { target.append(el("p", "empty", "Paste JSON in Text view or open a file.")); return; }
+    try {
+      const { root, limited } = FacetJSON.unpackStrings(FacetJSON.parse(codecDrafts.source));
+      renderTree(target, root, true);
+      if (limited) target.prepend(el("p", "empty", `Expansion limit: ${limited} strings shown as text.`));
+      $("b64-fold").disabled = $("b64-unfold").disabled = !root.children;
+    } catch (e) {
+      if (!(e instanceof SyntaxError || e instanceof RangeError)) throw e;
+      target.append(el("p", "empty", `${e.message} Switch to Text to edit.`));
+    }
+  }
+  for (const name of ["text", "tree"])
+    $("b64-" + name + "-view").onclick = () => { codecView = name; showCodecInput(); };
+  for (const [id, open] of [["b64-fold", false], ["b64-unfold", true]])
+    $(id).onclick = () => openBranches($("b64-tree"), open);
   function updateBase64() {
     let result;
     const mode = codecMode(), decoding = mode === "decode", json = mode === "json";
@@ -352,7 +386,7 @@
     const input = $("b64-input");
     input.value = codecDrafts[draftKey()];
     $("b64-field-label").hidden = !json;
-    $("b64-format").hidden = !json;
+    showCodecInput();
     input.setAttribute("aria-label", decoding ? "Base64 input" : json ? "JSON input" : "Text to encode");
     input.placeholder = decoding ? "Paste Base64, Base64URL or a Base64 data URL…" :
       json ? "Paste any valid JSON value…" : "Paste text to encode as UTF-8…";
