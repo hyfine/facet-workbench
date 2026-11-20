@@ -87,6 +87,34 @@ test("Base64 refuses invalid padding, invalid UTF-8 and binary data", () => {
   for (const data of ["A","S===","Zg=","Zh==","////","AAAA","data:,Hi"])
     assert.throws(() => FacetBase64.decode(data));
 });
+test("UTF-8 text encoding matches an independent byte encoder, including whitespace and Unicode", () => {
+  for (const text of ["", "  \r\n", '\uFEFF标签 🌿\n"\\/"', "界".repeat(300000)]) {
+    const bytes = Buffer.from(text, "utf8");
+    const result = FacetBase64.encode(text);
+    assert.equal(result.base64, bytes.toString("base64"));
+    assert.equal(result.bytes, bytes.length);
+  }
+  assert.throws(() => FacetBase64.encode("\uD800"), /round-trip/);
+});
+test("TurnN wire format is one string layer and preserves prompt text, array order and exact integers", () => {
+  const prompt = '说明 🌿\r\nUse "A" at C:\\doc; keep literal \\n and {"x":true}.';
+  const inner = `{"prompt":${JSON.stringify(prompt)},"order":[2,1],"n":9007199254740993}`;
+  const knownWire = '{"TurnN": ' + JSON.stringify(inner) + '}';
+  const perfect = Buffer.from(knownWire, "utf8").toString("base64");
+  for (const source of ['{\n  "TurnN": ' + inner + '\n}', knownWire]) {
+    const { base64 } = FacetBase64.encodeTurnN(source);
+    assert.equal(base64, perfect);
+    const wire = JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
+    assert.equal(typeof wire.TurnN, "string");
+    assert.equal(wire.TurnN, inner);
+    assert.equal(JSON.parse(wire.TurnN).prompt, prompt);
+  }
+});
+test("TurnN mode refuses malformed JSON, ambiguous envelopes and double-stringified objects", () => {
+  for (const source of ['{TurnN:{}}', '{"TurnN":{},"TurnN":{}}', '{}', '{"TurnN":{},"other":3}',
+    '{"TurnN":[]}', '{"TurnN":"{"}', JSON.stringify({ TurnN: JSON.stringify("{}") })])
+    assert.throws(() => FacetBase64.encodeTurnN(source));
+});
 test("size, complexity and nesting limits fail explicitly", () => {
   assert.throws(() => parse("[".repeat(100) + "0" + "]".repeat(100)), /nesting/);
   assert.throws(() => parse(" ".repeat(1024 * 1024 + 1)), /limit/);

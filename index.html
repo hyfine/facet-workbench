@@ -75,14 +75,14 @@
       </div>
       <div class="panel-foot"><span class="controlgroup"><button id="fold">Collapse all</button><button id="unfold">Expand all</button></span><span class="controlgroup"><button id="copy-json">Copy JSON</button><button id="save-json">Save JSON</button></span></div>
     </section>
-    <section id="base64" class="surface" aria-label="Base64 decoder" hidden>
-      <div class="commandbar"><span class="eyebrow">BASE64 / BASE64URL → TEXT</span><span class="controlgroup"><button id="b64-example">Load example</button><button id="b64-file">Open file</button></span></div>
+    <section id="base64" class="surface" aria-label="Base64 codec" hidden>
+      <div class="commandbar"><label class="inline">Operation <select id="b64-mode"><option value="decode">Decode Base64</option><option value="encode">Encode text</option><option value="turnn">Encode TurnN patch</option></select></label><span class="controlgroup"><button id="b64-example">Load example</button><button id="b64-file">Open file</button></span></div>
       <div class="statusline" id="b64-status" role="status"></div>
       <div class="duo">
-        <article class="pane"><header><span class="tag">64</span><div><small>INPUT</small><strong>Encoded data</strong></div></header><textarea id="b64-input" aria-label="Base64 input" spellcheck="false" placeholder="Paste Base64, Base64URL or a Base64 data URL…"></textarea></article>
-        <article class="pane"><header><span class="tag">Aa</span><div><small>OUTPUT</small><strong>Readable text</strong></div></header><pre id="b64-output" class="output"></pre></article>
+        <article class="pane"><header><div><small>INPUT</small><strong id="b64-source-label">Encoded data</strong></div></header><textarea id="b64-input" aria-label="Base64 input" spellcheck="false"></textarea></article>
+        <article class="pane"><header><div><small>OUTPUT</small><strong id="b64-result-label">Readable text</strong></div></header><pre id="b64-output" class="output"></pre></article>
       </div>
-      <div class="panel-foot"><span>UTF-8 and BOM-marked UTF-16 supported.</span><span class="controlgroup"><button id="copy-b64">Copy text</button><button id="to-json">Open in JSON Studio →</button></span></div>
+      <div class="panel-foot"><span id="b64-hint"></span><span class="controlgroup"><button id="copy-b64">Copy text</button><button id="to-json">Open in JSON Studio →</button></span></div>
     </section>
     <dialog id="viewer" aria-labelledby="viewer-title"><div id="viewer-panel" class="view-host">
       <header><h2 id="viewer-title">JSON output</h2><div class="display-tools" role="group" aria-label="Output display"></div><button id="close">Close</button></header>

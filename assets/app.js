@@ -10,7 +10,7 @@
   const tools = {
     compare: ["01 / STRUCTURAL DIFF", "Compare workspace", "Trace matching blocks across two documents. See the changes that matter.", "CORRESPONDENCE"],
     json: ["02 / DOCUMENT LAB", "JSON Studio", "Repair the syntax, explore the tree and keep your original untouched.", "TRANSFORMATION"],
-    base64: ["03 / TEXT CODEC", "Base64 decoder", "Turn encoded data into readable text, right here on your device.", "TRANSLATION"]
+    base64: ["03 / TEXT CODEC", "Base64 codec", "Decode text or encode a verified UTF-8 payload on your device.", "TRANSLATION"]
   };
   function navigate() {
     const key = location.hash.slice(1);
@@ -66,7 +66,7 @@
       try { text = new TextDecoder(enc, { fatal: true }).decode(bytes); }
       catch { throw Error("Use a UTF-8 or BOM-marked UTF-16 text file."); }
       if (text.includes("\0")) throw Error("This file contains binary data, not text.");
-      target.input.value = text; target.onLoad(f.name);
+      target.input.value = text; target.onLoad(f.name, text);
     } catch (e) { target.onError(e.message); }
   };
   function debounce(fn) {
@@ -328,23 +328,62 @@
     const url = URL.createObjectURL(new Blob([formatted + "\n"], { type: "application/json" }));
     const a = el("a"); a.href = url; a.download = "formatted.json"; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  const codecMode = () => $("b64-mode").value;
+  const codecDrafts = { decode: "", source: "" };
+  const draftKey = () => codecMode() === "decode" ? "decode" : "source";
   function updateBase64() {
     let result;
-    const input = $("b64-input").value;
-    if (!input.trim()) status("b64-status", "Ready", "Paste encoded text to begin.");
+    const mode = codecMode(), decoding = mode === "decode", patch = mode === "turnn";
+    const input = codecDrafts[draftKey()];
+    if (decoding ? !input.trim() : !input.length) status("b64-status", "Ready", "Paste input or open a file.");
     else try {
-      result = FacetBase64.decode(input);
-      status("b64-status", "Decoded", `${result.bytes} bytes · ${result.encoding}`);
-    } catch (e) { status("b64-status", "Cannot decode", e.message, true); }
-    $("b64-output").textContent = result?.text || "";
+      result = decoding ? FacetBase64.decode(input) : patch ? FacetBase64.encodeTurnN(input) : FacetBase64.encode(input);
+      status("b64-status", decoding ? "Decoded" : "Verified", decoding ? `${result.bytes} bytes · ${result.encoding}` :
+        `${result.bytes} UTF-8 bytes · ${patch ? "TurnN is a string; inner JSON matches input" : "Text round-trip matched"}`);
+    } catch (e) { status("b64-status", decoding ? "Cannot decode" : "Cannot encode", e.message, true); }
+    $("b64-output").textContent = result?.text ?? result?.base64 ?? "";
     $("copy-b64").disabled = $("to-json").disabled = !result;
   }
+  function setCodecMode() {
+    const mode = codecMode(), decoding = mode === "decode", patch = mode === "turnn";
+    const input = $("b64-input");
+    input.value = codecDrafts[draftKey()];
+    input.setAttribute("aria-label", decoding ? "Base64 input" : patch ? "TurnN JSON input" : "Text to encode");
+    input.placeholder = decoding ? "Paste Base64, Base64URL or a Base64 data URL…" :
+      patch ? 'Paste the complete {"TurnN": {...}} envelope…' : "Paste text to encode as UTF-8…";
+    $("b64-source-label").textContent = decoding ? "Encoded data" : patch ? "Edited JSON envelope" : "Plain text";
+    $("b64-result-label").textContent = decoding ? "Readable text" : patch ? "Base64 patch value" : "Standard Base64";
+    $("copy-b64").textContent = decoding ? "Copy text" : patch ? "Copy patch value" : "Copy Base64";
+    $("to-json").hidden = !decoding;
+    $("b64-hint").textContent = decoding ? "UTF-8 and BOM-marked UTF-16 supported." :
+      patch ? "Stringifies TurnN once. Paste only the Base64 into the target value." : "Encodes the text as UTF-8 without adding JSON escapes.";
+    updateBase64();
+  }
+  $("b64-mode").onchange = setCodecMode;
   const queueBase64 = debounce(updateBase64);
-  $("b64-input").oninput = () => { $("copy-b64").disabled = $("to-json").disabled = true; queueBase64(); };
-  $("b64-example").onclick = () => {
-    $("b64-input").value = btoa('{"message":"Hello from Facet","local":true}'); updateBase64();
+  $("b64-input").oninput = () => {
+    codecDrafts[draftKey()] = $("b64-input").value;
+    $("b64-output").textContent = "";
+    $("copy-b64").disabled = $("to-json").disabled = true;
+    queueBase64();
   };
-  $("b64-file").onclick = () => chooseFile($("b64-input"), updateBase64, msg => status("b64-status", "File not opened", msg, true));
+  $("b64-example").onclick = () => {
+    const mode = codecMode();
+    codecDrafts[draftKey()] = mode === "decode" ? btoa('{"message":"Hello from Facet","local":true}') :
+      mode === "turnn" ? JSON.stringify({ TurnN: { prompt: 'Summarize "Atlas".\nKeep it short.' } }, null, 2) : "Hello from Facet!";
+    setCodecMode();
+  };
+  $("b64-file").onclick = () => {
+    const key = draftKey();
+    chooseFile($("b64-input"), (_name, text) => {
+      // Textareas normalize CRLF on assignment; keep the loaded text for encoding.
+      codecDrafts[key] = text; setCodecMode();
+    }, msg => {
+      $("b64-output").textContent = "";
+      $("copy-b64").disabled = $("to-json").disabled = true;
+      status("b64-status", "File not opened", msg, true);
+    });
+  };
   $("copy-b64").onclick = () => copy($("b64-output").textContent);
   $("to-json").onclick = () => { $("json-input").value = $("b64-output").textContent; updateJSON(); location.hash = "json"; };
   diffSample(); $("json-input").value = imperfect; updateJSON(); $("b64-example").click(); navigate();

@@ -24,7 +24,7 @@ The portable runtime is plain HTML, CSS and JavaScript; the optional video is no
 |---|---|---|
 | **Compare** | Choose **Edit inputs**, paste each side, then **Compare now**. Or choose **Open file** in either pane. | A split view in original source order. Matching rows link on hover or keyboard focus; `~`, `+` and `−` mark changes independently of color. |
 | **JSON Studio** | Paste JSON, or try the imperfect example; switch between **Tree** and **Text**. | Live formatting, explained repairs, wrapping, folding, an expanded dialog, clipboard and file export. Original input is never rewritten. |
-| **Base64** | Paste standard Base64, Base64URL or a Base64 data URL. | Readable UTF-8 or BOM-marked UTF-16, byte count, copy and a direct handoff to JSON Studio. Invalid padding and binary input produce an error, not garbled text. |
+| **Base64** | Decode Base64/Base64URL, encode plain text, or build a TurnN patch from an edited JSON file. | UTF-8 text encoding, verified patch values, copy and a decoder handoff to JSON Studio. Files are read locally. |
 
 Use **Alt+1 / Alt+2 / Alt+3** to switch tools. Tab into a comparison pane and press **↑ / ↓** to trace matches. Press **Esc** to close the expanded JSON view.
 
@@ -35,6 +35,14 @@ Use **− / +** above any workspace to scale its content from **75% to 200%**. C
 **Unpack JSON strings** is on by default in Studio. For example, `{"envelope":"{\"tags\":[\"blue\"]}"}` displays and exports as `{"envelope":{"tags":["blue"]}}`. It also works when the whole input is a quoted JSON document or an array contains more serialized objects. The source pane is never rewritten. Turn the option off to format, copy or save with the original string types.
 
 **Tree** shows decoded text with actual newlines, quotes and path separators. **Text**, **Copy JSON** and **Save JSON** retain the escapes required for valid JSON. Ordinary text, scalar-looking strings like `"123"`, and incomplete embedded documents are not converted. Embedded documents must be strict JSON. Expansion shares the Studio size/depth limits and caps repeated decoding; when a limit is reached, the string stays intact and Studio reports it.
+
+### Encoding text or a TurnN patch
+
+- **Encode text** encodes exactly the supplied text as standard padded Base64 of UTF-8 bytes. No JSON parsing or escaping. Use **Open file** if the file's line endings matter: pasting or editing in a browser text field can normalize newlines. Files are read as text, not as arbitrary binary blobs.
+- **Encode TurnN patch** is for a different contract: the decoded envelope's `TurnN` must be a **string containing a JSON object**. Open the edited envelope (for example `{"TurnN":{"prompt":"Hello"}}`). Facet serializes the inner object, producing `{"TurnN": "{\"prompt\":\"Hello\"}"}`, then encodes the whole envelope. The backslashes are JSON syntax, not part of the prompt. Do not insert them manually. An already serialized `TurnN` is validated but not stringified again.
+- Wait for **Verified**, then use **Copy patch value** and paste just that string into the intended patch's `value`. Verification decodes the generated Base64, checks the outer field type and parses the inner JSON back against the edited content, including array order, exact numeric tokens and literal string contents. This checks serialization, not the receiving application's schema or the choice of experiment. Facet does not edit the target configuration.
+
+This mode expects exactly one outer field, `TurnN`, and does not guess whether any deeper field should be converted from an object back into a string. Keep such fields in their intended types. Formatting differences outside strings can change Base64 bytes without changing the JSON data; changes **inside** a prompt are significant.
 
 ## What counts as a match?
 
@@ -50,7 +58,7 @@ For unordered arrays, exact subtrees are paired first. Edited remaining records 
 
 **Repair is deliberately conservative.** Studio can remove comments, a BOM and trailing commas, quote bare keys and convert single-quoted strings. It does not evaluate JavaScript, choose between duplicate keys or invent a missing value. The comparison engine uses strict JSON; repair malformed input in Studio or explicitly choose **Text** mode.
 
-**MVP limits:** 1 MiB per file / 1 Mi-character per pasted side; JSON Studio accepts 8,000 values and 96 nesting levels; Compare accepts 3,000 JSON values or 4,000 lines per side. The line diff caps its unmatched matrix at four million cells. Larger inputs get an explicit diagnostic.
+**MVP limits:** 1 MiB per file / 1 Mi-character per pasted side (up to 4 Mi-characters of encoded input for Base64 decoding). The TurnN encoder also limits the serialized envelope to 1 Mi-character. JSON Studio accepts 8,000 values and 96 nesting levels; Compare accepts 3,000 JSON values or 4,000 lines per side. The line diff caps its unmatched matrix at four million cells. Larger inputs get an explicit diagnostic.
 
 ## Inside the workbench
 

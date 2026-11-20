@@ -58,7 +58,7 @@ async function main() {
       await button("Close").click();
       await chapter("03  /  Decode and keep working");
       await nav(/Base64/).click();
-      await example("Base64 decoder");
+      await example("Base64 codec");
       assert.equal(JSON.parse(await page.locator("#b64-output").innerText()).message, "Hello from Facet");
       await pause(2100);
       await button("Open in JSON Studio →").click();
