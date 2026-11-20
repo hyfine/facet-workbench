@@ -96,24 +96,32 @@ test("UTF-8 text encoding matches an independent byte encoder, including whitesp
   }
   assert.throws(() => FacetBase64.encode("\uD800"), /round-trip/);
 });
-test("TurnN wire format is one string layer and preserves prompt text, array order and exact integers", () => {
-  const prompt = '说明 🌿\r\nUse "A" at C:\\doc; keep literal \\n and {"x":true}.';
-  const inner = `{"prompt":${JSON.stringify(prompt)},"order":[2,1],"n":9007199254740993}`;
-  const knownWire = '{"TurnN": ' + JSON.stringify(inner) + '}';
-  const perfect = Buffer.from(knownWire, "utf8").toString("base64");
-  for (const source of ['{\n  "TurnN": ' + inner + '\n}', knownWire]) {
-    const { base64 } = FacetBase64.encodeTurnN(source);
-    assert.equal(base64, perfect);
-    const wire = JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
-    assert.equal(typeof wire.TurnN, "string");
-    assert.equal(wire.TurnN, inner);
-    assert.equal(JSON.parse(wire.TurnN).prompt, prompt);
+test("JSON encoding keeps arbitrary roots and exact numeric tokens when no field is selected", () => {
+  for (const [source, expected] of [['{ "config": [true, null] }', '{"config":[true,null]}'],
+    ['[ 9007199254740993, -0 ]', '[9007199254740993,-0]'], ['"hello"', '"hello"'], ['null','null']]) {
+    assert.equal(FacetBase64.encodeJSON(source).base64, Buffer.from(expected).toString("base64"));
   }
 });
-test("TurnN mode refuses malformed JSON, ambiguous envelopes and double-stringified objects", () => {
-  for (const source of ['{TurnN:{}}', '{"TurnN":{},"TurnN":{}}', '{}', '{"TurnN":{},"other":3}',
-    '{"TurnN":[]}', '{"TurnN":"{"}', JSON.stringify({ TurnN: JSON.stringify("{}") })])
-    assert.throws(() => FacetBase64.encodeTurnN(source));
+test("serializing a named field uses one string layer and preserves siblings, text and exact integers", () => {
+  const prompt = '说明 🌿\r\nUse "A" at C:\\doc; keep literal \\n and {"x":true}.';
+  const inner = `{"prompt":${JSON.stringify(prompt)},"order":[2,1],"n":9007199254740993}`;
+  const knownWire = '{"payload": ' + JSON.stringify(inner) + '}';
+  const perfect = Buffer.from(knownWire, "utf8").toString("base64");
+  for (const source of ['{\n  "payload": ' + inner + '\n}', knownWire]) {
+    const { base64 } = FacetBase64.encodeJSON(source, "payload");
+    assert.equal(base64, perfect);
+    const wire = JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
+    assert.equal(wire.payload, inner);
+    assert.equal(JSON.parse(wire.payload).prompt, prompt);
+  }
+  const source = '{"list":[1,2],"already":"{  }","meta":{"ok":false}}';
+  const { base64 } = FacetBase64.encodeJSON(source, "list");
+  assert.deepEqual(JSON.parse(Buffer.from(base64,"base64").toString()), { list: "[1,2]", already: "{  }", meta: { ok: false } });
+});
+test("JSON encoding refuses malformed documents and invalid field selections", () => {
+  for (const source of ['{data:{}}', '{"data":{},"data":{}}']) assert.throws(() => FacetBase64.encodeJSON(source));
+  for (const source of ['{}', '[]', '{"data":true}', '{"data":"{"}', JSON.stringify({ data: JSON.stringify("{}") })])
+    assert.throws(() => FacetBase64.encodeJSON(source, "data"));
 });
 test("size, complexity and nesting limits fail explicitly", () => {
   assert.throws(() => parse("[".repeat(100) + "0" + "]".repeat(100)), /nesting/);

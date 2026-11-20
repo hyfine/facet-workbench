@@ -76,10 +76,13 @@
       <div class="panel-foot"><span class="controlgroup"><button id="fold">Collapse all</button><button id="unfold">Expand all</button></span><span class="controlgroup"><button id="copy-json">Copy JSON</button><button id="save-json">Save JSON</button></span></div>
     </section>
     <section id="base64" class="surface" aria-label="Base64 codec" hidden>
-      <div class="commandbar"><label class="inline">Operation <select id="b64-mode"><option value="decode">Decode Base64</option><option value="encode">Encode text</option><option value="turnn">Encode TurnN patch</option></select></label><span class="controlgroup"><button id="b64-example">Load example</button><button id="b64-file">Open file</button></span></div>
+      <div class="commandbar"><div class="controlgroup">
+        <label class="inline">Operation <select id="b64-mode"><option value="decode">Decode Base64</option><option value="encode">Encode text</option><option value="json">Encode JSON</option></select></label>
+        <label id="b64-field-label" class="inline" hidden>Stringify field <input id="b64-field" type="text" size="21" placeholder="Optional top-level key" spellcheck="false" autocomplete="off"></label>
+      </div><span class="controlgroup"><button id="b64-example">Load example</button><button id="b64-file">Open file</button></span></div>
       <div class="statusline" id="b64-status" role="status"></div>
       <div class="duo">
-        <article class="pane"><header><div><small>INPUT</small><strong id="b64-source-label">Encoded data</strong></div></header><textarea id="b64-input" aria-label="Base64 input" spellcheck="false"></textarea></article>
+        <article class="pane"><header><div><small>INPUT</small><strong id="b64-source-label">Encoded data</strong></div><button id="b64-format" class="file-btn" hidden>Format input</button></header><textarea id="b64-input" aria-label="Base64 input" spellcheck="false"></textarea></article>
         <article class="pane"><header><div><small>OUTPUT</small><strong id="b64-result-label">Readable text</strong></div></header><pre id="b64-output" class="output"></pre></article>
       </div>
       <div class="panel-foot"><span id="b64-hint"></span><span class="controlgroup"><button id="copy-b64">Copy text</button><button id="to-json">Open in JSON Studio →</button></span></div>

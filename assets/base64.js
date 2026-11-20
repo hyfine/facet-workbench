@@ -12,22 +12,28 @@
       throw Error("Text cannot round-trip through UTF-8. Check for an unpaired surrogate.");
     return { base64, bytes: bytes.length };
   }
-  function encodeTurnN(source) {
+  function encodeJSON(source, field = null) {
     const { parse, format } = globalThis.FacetJSON;
     const { root } = parse(source);
-    if (root.type !== "object" || root.children.length !== 1 || root.children[0].key !== "TurnN")
-      throw Error('Expected an envelope with exactly one field: {"TurnN": {...}}.');
-    const field = root.children[0].node;
-    // Keep an already serialized field intact; never stringify the field twice.
-    const inner = field.type === "string" ? parse(field.value).root : field;
-    if (inner.type !== "object") throw Error("TurnN must contain an object, or a string holding one JSON object.");
-    const expected = format(inner, 0);
-    const innerText = field.type === "string" ? field.value : expected;
-    const wire = '{"TurnN": ' + JSON.stringify(innerText) + '}';
+    const expected = format(root, 0);
+    let wire = expected, original;
+    if (field !== null) {
+      original = root.type === "object" && root.children.find(c => c.key === field)?.node;
+      if (!original) throw Error(`Top-level field ${JSON.stringify(field)} not found.`);
+      const inner = original.type === "string" ? parse(original.value).root : original;
+      if (!inner.children) throw Error("Choose an object, an array, or a string already containing one.");
+      const text = original.type === "string" ? original.value : format(original, 0);
+      wire = "{" + root.children.map(({ key, node }) =>
+        JSON.stringify(key) + ": " + (key === field ? JSON.stringify(text) : format(node, 0))).join(", ") + "}";
+    }
     const result = encode(wire);
-    const envelope = JSON.parse(decode(result.base64).text);
-    if (typeof envelope.TurnN !== "string" || format(parse(envelope.TurnN).root, 0) !== expected)
-      throw Error("The generated patch did not round-trip to the input document.");
+    const recovered = parse(decode(result.base64).text).root;
+    if (field !== null) {
+      const entry = recovered.children.find(c => c.key === field);
+      if (entry?.node.type !== "string") throw Error("The selected field did not round-trip as a JSON string.");
+      if (original.children) entry.node = parse(entry.node.value).root;
+    }
+    if (format(recovered, 0) !== expected) throw Error("The decoded JSON did not match the input document.");
     return result;
   }
   function decode(input) {
@@ -54,5 +60,5 @@
       throw Error("Decoded bytes contain binary control characters, not readable text.");
     return { text, bytes: bytes.length, encoding };
   }
-  globalThis.FacetBase64 = { decode, encode, encodeTurnN };
+  globalThis.FacetBase64 = { decode, encode, encodeJSON };
 })();
